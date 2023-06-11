@@ -1,0 +1,116 @@
+---
+title: "Exploratory"
+format: html
+
+---
+
+```{r}
+cmap <- readRDS(here::here("data/annotation_cmap.rds")) |>
+  dplyr::ungroup() |>
+  dplyr::mutate(radiosensitizer = deltaRSI<0)
+```
+
+```{r}
+cmap <- cmap |>
+  dplyr::arrange(dplyr::desc(abs(deltaRSI)))
+
+```
+
+```{r}
+
+ggpubr::ggboxplot(cmap, x="cell2",y="deltaRSI") + ggpubr::stat_compare_means()
+```
+
+
+```{r}
+
+sigcmap <- cmap |>
+  dplyr::filter(abs(deltaRSI) > 0.15) |>
+  dplyr::filter(radiosensitizer) |>
+  dplyr::group_by(cell2, cmap_name) |>
+  dplyr::summarize(
+    deltaRSI=mean(deltaRSI), 
+    radiosensitizer=any(radiosensitizer),
+    vehicle_rsi = mean(vehicle_rsi),
+    perturbation_rsi = mean(perturbation_rsi)
+    
+    ) |>
+  dplyr::ungroup() 
+
+#(mean(deltaRSI)+2*sd(deltaRSI))) 
+
+sigcmap |>
+  dplyr::count(cell2, radiosensitizer) |>
+  dplyr::mutate(
+    radiosensitizer = ifelse(radiosensitizer,"radiosensitizer","radioprotector") 
+  ) |>
+  tidyr::pivot_wider(names_from="radiosensitizer",values_from="n") |>
+  knitr::kable()
+```
+```{r}
+ggvenn::ggvenn(list(
+  HL60 = sigcmap |>
+    dplyr::filter(cell2=="HL60") |>
+    dplyr::pull(cmap_name),
+  MCF7 = sigcmap |>
+    dplyr::filter(cell2 == "MCF7") |>
+    dplyr::pull(cmap_name)
+)
+)
+```
+
+```{r}
+
+tmp <- cmap |>
+  dplyr::filter(cell2 %in% c("MCF7","HL60")) 
+t.test(tmp$vehicle_rsi, tmp$perturbation_rsi,paired=TRUE)
+
+t.test(vehicle_rsi~cell2, data=tmp)
+t.test(perturbation_rsi~cell2, data=tmp)
+  
+```
+
+```{r}
+
+ggpubr::ggscatter(cmap, x = "vehicle_rsi",y="perturbation_rsi", shape="cell2", fill = "cell2",color="cell2") +
+  ggplot2::geom_abline(slope=1,intercept=-0.1) +
+  ggplot2::geom_abline(slope=1,intercept=0.1)
+```
+
+```{r}
+cmap_rsi <- cmap |>
+  dplyr::ungroup() |>
+  dplyr::mutate(
+    rsi_genes = purrr::map(
+      diffs, 
+      \(.x){
+        tibble::as_tibble(
+          t(.x[rsi:::translation_table$hgu133plus2,])
+        )
+      }
+    )
+  ) |>
+  tidyr::unnest(rsi_genes) |>
+  dplyr::filter(`202531_at` > 0)
+
+sigcmap_rsi <- cmap_rsi |>
+  dplyr::filter(abs(deltaRSI) > 0.15) |>
+  dplyr::filter(radiosensitizer)
+
+#mean(deltaRSI)+2*sd(deltaRSI)) 
+```
+
+```{r}
+colMeans(as.matrix(sigcmap_rsi[sigcmap_rsi$radiosensitizer,rsi:::translation_table$hgu133plus2]))
+colMeans(as.matrix(sigcmap_rsi[!sigcmap_rsi$radiosensitizer,rsi:::translation_table$hgu133plus2]))
+```
+
+```{r}
+
+table(sigcmap_rsi$radiosensitizer, sigcmap_rsi$cell2)
+```
+
+```{r}
+
+purrr::list_cbind(purrr::list_simplify(sigcmap_rsi$diffs))
+```
