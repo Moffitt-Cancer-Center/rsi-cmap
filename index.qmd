@@ -1,0 +1,10 @@
+---
+title: "PI/Project"
+format: html
+---
+
+This project was initiated by Dr. Y. There were 100 tumors that were profiled
+using some technology. Some are responders and non-responders.
+
+High-level overview of the project (like the README).
+

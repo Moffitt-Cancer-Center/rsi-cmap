@@ -3,3 +3,5 @@
 ^data-raw/CEL$
 ^data-raw/downloads$
 ^LICENSE\.md$
+^.*\.Rproj$
+^\.Rproj\.user$

@@ -1,20 +1,17 @@
 # 05-merge_annotation
 
-x<-readRDS(file = here::here("data-raw/work/00-cmap_annotation.rds")) |>
-  dplyr::mutate(
-    perturbation_celfile = paste0(perturbation_scan_id,".CEL.gz"),
-    vehicle_celfile = paste0(vehicle_scan_inferred, ".CEL.gz")
-  )
+x<-readRDS(file = here::here("data-raw/imports/annotation_cmap.rds")) |>
+  dplyr::ungroup()
 
-u133 <- readRDS(here::here("data-raw/work/02-rma_u133.rds"))
-ea <- readRDS(here::here("data-raw/work/02-rma_ea.rds"))
-ht <- readRDS(here::here("data-raw/work/02-rma_ht.rds"))
+u133 <- readRDS(here::here("data-raw/work/01-rma_u133.rds"))
+ea <- readRDS(here::here("data-raw/work/01-rma_ea.rds"))
+ht <- readRDS(here::here("data-raw/work/01-rma_ht.rds"))
 p <- dplyr::bind_rows(
   Biobase::pData(u133),
   Biobase::pData(ea),
   Biobase::pData(ht)
 ) |>
-  dplyr::rename(celfile_path = celfile) |>
+  dplyr::select(rsi) |>
   tibble::rownames_to_column("celfile")
 
 

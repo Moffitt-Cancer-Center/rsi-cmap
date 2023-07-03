@@ -1,0 +1,12 @@
+md5: d6f3cbc68af394179651868aa6928b56
+frozen: true
+deps:
+- md5: 847ef180b8c2faea5d15659cc7abec10.dir
+  size: 2601335609
+  nfiles: 4
+  path: ssh://red.moffitt.org/share/dept_bbsr/Projects/Eschrich_Steven/CMAP/build02/cmapimportr/data
+outs:
+- md5: 847ef180b8c2faea5d15659cc7abec10.dir
+  size: 2601335609
+  nfiles: 4
+  path: imports

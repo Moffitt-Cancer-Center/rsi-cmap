@@ -1,2 +1,6 @@
 # CMAP
-Data was downloaded from https://clue.io/data/CMB02#B02 on 2023-05-28
+The cmap data is imported from another project via dvc.
+
+```sh
+dvc import-url ssh://red.moffitt.org/share/dept_bbsr/Projects/Eschrich_Steven/CMAP/build02/cmapimportr/data data-raw/imports
+```

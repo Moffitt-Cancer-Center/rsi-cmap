@@ -1,5 +1,4 @@
 .Rproj.user
-data-raw/CEL
 data-raw/work
-data-raw/downloads
-data-raw/rankMatrix.txt*
+data-raw/rankMatrix.txt
+data-raw/*.zip
