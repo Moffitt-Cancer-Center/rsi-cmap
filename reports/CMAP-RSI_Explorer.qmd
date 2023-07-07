@@ -1,0 +1,11 @@
+---
+title: "CMAP-RSI Explorer"
+---
+
+The table below can be used to explore the CMAP-RSI data directly. Each row represents a specific experiment that was performed in CMAP: a drug (cmap_name), drug concentration (concentration), applied to a cell (cell2). Note that there may be repeated rows for the same type of experiment (although each row is unique).
+
+
+```{=html}
+<iframe width="1000" height="1000" src="Explorer" title="CMAP-RSI Explorer"></iframe>
+```
+
