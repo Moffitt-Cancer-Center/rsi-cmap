@@ -2,9 +2,13 @@ Package: cmap-rsi
 Title: RSI Analysis of CMAP Data
 Version: 0.0.0.9000
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"),
+    person("Steven", "Eschrich", , "Steven.Eschrich@moffitt.org", role = c("aut", "cre"),
            comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
+Description: The Connectivity Map is a dataset of cell line perturbations by drugs. Both
+  the vehicle control (as untreated approximation) and perturbation are profiled using gene
+  expression microarrays. This project uses RSI as a measure of radiosensitivity and evaluates
+  the differences in RSI between vehicle control and perturbations under the assumption these
+  differences could enrich for radiosensitizers or radioprotectors.
 License: Apache License (>= 2)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

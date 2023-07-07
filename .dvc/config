@@ -1,2 +1,4 @@
+[core]
+    remote = archive
 ['remote "archive"']
     url = ssh://red.moffitt.org/share/dept_bbsr/Projects/Eschrich_Steven/CMAP/dvc

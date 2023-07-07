@@ -1,6 +1,9 @@
 project:
   output-dir: public
   type: website
+  resources:
+    - "reports/Explorer/app.R"
+    - "reports/Explorer/cmap.arrow"
 
 # This allows reports that don't change to not be rendered every time
 execute:

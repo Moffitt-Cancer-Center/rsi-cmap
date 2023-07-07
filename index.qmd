@@ -1,10 +1,11 @@
 ---
-title: "PI/Project"
+title: "RSI/RSI-CMAP"
 format: html
 ---
 
-This project was initiated by Dr. Y. There were 100 tumors that were profiled
-using some technology. Some are responders and non-responders.
+This project was initiated by Dr. Torres-Roca and others. The Connectivity Map (CMAP) is a Broad Institute project to use gene expression profiling to characterize cell lines after drug treatment. They also provide vehicle control (similar to untreated cells). In the first iteration of this data (build02), there are only a handful of cell lines profiled. There are a decent number of drugs profiled.
 
-High-level overview of the project (like the README).
+Separately, RSI has been demonstrated to predict radiation response in patient cohorts treated with radiotherapy.
+
+Thus we reasoned that RSI could identify drugs that modulate radiation sensitivity, by analyzing RSI scores in perturbed cell lines vs. the vehicle control. Conditions in which RSI increases would be considered as radioprotectors and conditions in which RSI decreases could be considered radiosensitizers.
 

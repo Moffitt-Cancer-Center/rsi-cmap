@@ -4,7 +4,7 @@ This is a project associated with data mining RSI values from the connectivity m
 ## Analysis Data
 The data in this project should be available via dvc, so you can use
 ```
-dvc pull data
+dvc pull
 ```
 
 ## Raw Data

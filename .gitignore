@@ -2,3 +2,7 @@
 data-raw/work
 data-raw/rankMatrix.txt
 data-raw/*.zip
+
+/.quarto/
+/_freeze
+/public
