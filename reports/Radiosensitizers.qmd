@@ -1,0 +1,147 @@
+---
+title: "Radiosensitizers"
+---
+
+
+Radiosensitizers are drugs that are expected to increase the effect of radiation. Given the CMAP data, we estimate a radiosensitization effect as a lower RSI in drug perturbation (negative deltaRSI). For this report, we focus only on the radiosensitizer group.
+
+```{r}
+cmap <- readRDS(here::here("data/annotation_cmap.rds")) |>
+  dplyr::ungroup() |>
+  dplyr::mutate(radiosensitizer = deltaRSI<0)
+```
+
+
+```{r}
+cmap <- cmap |>
+  dplyr::arrange(dplyr::desc(abs(deltaRSI)))
+
+```
+
+# Radiosensitizer List
+If we consider radiosensitizers to be deltaRSI values above 0.15, we can count the number of drugs by cell line that meet this criteria (@tbl-sig-cmap).
+
+```{r}
+# An alternate definition of radiosensitizer
+#(mean(deltaRSI)+2*sd(deltaRSI))) 
+
+sigcmap <- cmap |>
+  dplyr::filter(radiosensitizer) |>
+  dplyr::filter(deltaRSI < -0.15) |>
+  dplyr::rename(`Cell Line`=cell2) |>
+  dplyr::group_by(`Cell Line`, cmap_name) |>
+  dplyr::summarize(
+    deltaRSI=mean(deltaRSI), 
+    radiosensitizer=any(radiosensitizer),
+    vehicle_rsi = mean(vehicle_rsi),
+    perturbation_rsi = mean(perturbation_rsi),
+    .groups = "drop_last"
+    ) 
+```
+
+```{r}
+#| label: tbl-sig-cmap
+#| tbl-cap: Number of radiosensitizers (at least one experiment with deltaRSI < -0.15) per cell line in the CMAP dataset.
+sigcmap |>
+  dplyr::count(`Cell Line`, radiosensitizer) |>
+  dplyr::mutate(
+    radiosensitizer = ifelse(radiosensitizer,"radiosensitizer","radioprotector") 
+  ) |>
+  tidyr::pivot_wider(names_from="radiosensitizer",values_from="n") |>
+  knitr::kable()
+```
+
+# Radiosensitizer Overlap Between MCF7 and HL60
+We can examine the significant radiosensitizers to see how many are in common between the HL60 and MCF7 cell lines (the two most numerous experimental conditions) in @fig-venn-diagram-rs.
+
+
+```{r}
+#| label: fig-venn-diagram-rs
+#| fig-cap: Venn diagram of radiosensitizers appearing for both the HL60 and MCF7 cell lines.
+ggvenn::ggvenn(list(
+  HL60 = sigcmap |>
+    dplyr::filter(`Cell Line`=="HL60") |>
+    dplyr::pull(cmap_name),
+  MCF7 = sigcmap |>
+    dplyr::filter(`Cell Line` == "MCF7") |>
+    dplyr::pull(cmap_name)
+),
+show_percentage=FALSE)
+```
+
+
+
+
+
+# RSI Gene Changes in Radiosensitizers
+The 10 RSI genes can be individually analyzed to look for differences in gene expression that are driving the RSI changes in radiosensitizers. We use the definition of radiosensitizer as 0.15 as before. The mean differences in RSI genes are shown in @tbl-rsi-gene-diffs-radiosensitizers for both the radiosensitizers and all other drug/cell line combinations. The difference indicates a t test of differences between radiosensitizers and others.
+
+```{r}
+#| label: extract-rsi-gene-differences
+cmap_rsi <- cmap |>
+  dplyr::ungroup() |>
+  dplyr::mutate(
+    rsi_genes = purrr::map(
+      diffs, 
+      \(.x){
+        tibble::as_tibble(
+          t(.x[rsi:::translation_table$hgu133plus2,])
+        )
+      }
+    )
+  ) |>
+  tidyr::unnest(rsi_genes)
+
+# We had tried this, since we should not expect gene expression to be less than zero
+# although in fact it has occurred.
+# For now, we are going to leave it out although the results will conflict with prior values
+# slightly due to the difference.
+#  dplyr::filter(`202531_at` > 0)
+```
+
+```{r}
+#| label: tbl-rsi-gene-diffs-radiosensitizers
+#| tbl-cap: "RSI gene differences within the radiosensitizers and non-radiosensitizers. Gene expression differences were calculated as deltaRSI: perturbation minus the control. Thus negative gene expression differences implies the gene had lower expression in the perturbation (the drug lowered the gene's expression)."
+# An alternate definition
+#mean(deltaRSI)+2*sd(deltaRSI)) 
+
+sigcmap_rsi <- cmap_rsi |>
+  dplyr::filter(abs(deltaRSI) > 0.15) |>
+  dplyr::filter(radiosensitizer) |>
+  dplyr::select(rsi:::translation_table$hgu133plus2) |>
+  as.matrix()
+
+unsigcmap_rsi <- cmap_rsi |>
+  dplyr::filter(abs(deltaRSI) <= 0.15) |>
+  dplyr::filter(!radiosensitizer) |>
+  dplyr::select(rsi:::translation_table$hgu133plus2) |>
+  as.matrix()
+
+dplyr::bind_rows(
+  "Radiosensitizers"=colMeans(sigcmap_rsi),
+  "Other"=colMeans(unsigcmap_rsi),
+  "Difference (t test)" = 
+    matrixTests::col_t_welch(sigcmap_rsi, unsigcmap_rsi)[,"pvalue",drop=F] |>
+    tibble::as_tibble(rownames="Gene") |>
+    tibble::deframe(),
+  .id=c("Type")
+) |>
+  tibble::column_to_rownames("Type") |>
+  t() |>
+  tibble::as_tibble(rownames="Probeset") |> 
+  dplyr::left_join(
+    dplyr::select(rsi:::translation_table, `Gene Symbol`, `hgu133plus2`),
+    by=c("Probeset"="hgu133plus2")
+  ) |>
+  dplyr::arrange(dplyr::desc(Radiosensitizers)) |> 
+  dplyr::mutate(`Difference (t test)`=format.pval(`Difference (t test)`)) |>
+  dplyr::select(`Gene Symbol`, `Probeset`, dplyr::everything()) |>
+  kableExtra::kable() 
+  
+```
+
+
+```{r}
+
+#purrr::list_cbind(purrr::list_simplify(sigcmap_rsi$diffs))
+```

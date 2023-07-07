@@ -1,0 +1,128 @@
+---
+title: "Overview"
+order: 1
+
+---
+
+This document provides an overview of the experimental dataset. For details on the processing, see the project `cmapimportr`. Briefly, there are several different chip types that were used in the experiment. Each of these types was independently processed using the RMA normalization. RSI was calculated from each sample. Additionally, cell line experiments were aligned as vehicle controls and perturbations so that a `deltaRSI` can be computed for each drug (at each concentration).
+
+```{r}
+#| label: setup
+
+cmap <- readRDS(here::here("data/annotation_cmap.rds")) |>
+  dplyr::select(-diffs)
+
+```
+
+
+
+
+
+## Cell Lines
+There are only a handful of cell lines studied in the `build02` experiment. One of these is just a derivative of a parental cell line. The summary of unique cell/drug combinations (ignoring different drug concentrations) is shown in @tbl-cell-overview. 
+
+```{r}
+#| label: tbl-cell-overview
+#| tbl-cap: Summary of cell lines in the CMAP dataset.
+
+dplyr::select(cmap, cell2, cmap_name) |>
+  dplyr::distinct() |>
+  gtsummary::tbl_summary(include=cell2) |>
+  gtsummary::as_kable_extra() 
+  
+```
+
+## RSI Distribution
+The RSI values for vehicle control and perturbation by cell line can be seen in @fig-boxplot-rsi. Note that the variability in RSI across what should be identical cell line experiments is relatively high (vehicle control), however since the variability in perturbation shows a similar distribution it is possible these are batch effects that we observe.
+
+
+```{r}
+gdf <- tidyr::pivot_longer(cmap, cols=c("vehicle_rsi","perturbation_rsi"), names_to="condition", values_to="rsi")
+
+```
+
+
+```{r}
+#| label: fig-boxplot-rsi
+#| fig-cap: Boxplot of RSI values in the CMAP data, separated by cell line and treatment condition. Note the high variability in vehicle, which suggests there are changes in cell lines over time.
+ggpubr::ggboxplot(gdf, x="cell2",y="rsi", bxp.errorbar = TRUE, fill="lightgray", facet.by = "condition") +
+  ggpubr::stat_compare_means() 
+```
+# DeltaRSI
+
+We use the difference in RSI (`deltaRSI`) as a measure of the drug effect (`perturbation - control`). We can see the density plot of deltaRSI across the CMAP data in @fig-deltarsi. @fig-deltaRSI-boxplot indicates that deltaRSI does not seem to be very different across cell lines. This indicates that most experiments have a small deltaRSI, or that few experiments have an impact on radiation sensitivity. Which is expected.
+
+```{r}
+#| label: fig-deltarsi
+#| fig-cap: Density plot of deltaRSI values across the CMAP data. The dashed line represents a normal distribution, compared to the deltaRSI distribution (in gray). Note that deltaRSI values around 0.2 appear to be more frequent than the normal distribution.
+#| 
+ggpubr::ggdensity(cmap, x="deltaRSI", fill="grey") +
+  ggpubr::stat_overlay_normal_density(color="black", linetype="dashed")
+
+```
+
+
+```{r}
+#| label: fig-deltaRSI-boxplot
+#| fig-cap: Boxplot of deltaRSI values by cell line in the CMAP data.
+#| 
+ggpubr::ggboxplot(cmap, x="cell2",y="deltaRSI", bxp.errorbar = TRUE, fill="cell2") + 
+  ggpubr::stat_compare_means()
+
+```
+
+## Drugs
+
+There are `r length(unique(cmap$cmap_name))` drugs tested within this dataset. The drugs with the largest mean change in RSI are shown in @tbl-cmap-top-drugs. Note these are only drugs with a deltaRSI of greater than 0.2.
+
+```{r}
+#| label: tbl-cmap-top-drugs
+#| tbl-cap: List of top drugs (by mean deltaRSI) as candidates for radiosensitizers (perturbation RSI lower than control RSI).
+cmap |> 
+  dplyr::group_by(cmap_name) |>
+  dplyr::summarize(
+    meanDeltaRSI=mean(deltaRSI),
+    minDeltaRSI=min(deltaRSI),
+    maxDeltaRSI=max(deltaRSI)
+  ) |> 
+  dplyr::arrange(meanDeltaRSI) |> 
+  dplyr::filter(abs(meanDeltaRSI)>0.2) |>
+  kableExtra::kable()
+```
+
+# deltaRSI Differences Between MCF7 and HL60
+We can evaluate the differences in RSI values (vehicle, perturbation) across between the HL60 and MCF7 cell lines (the two most numerous experimental conditions) as shown in @fig-two-cell-boxplot, or per cell line (@fig-boxplot-by-cell-twocells). In all cases, the differences appear to be significant. Note this is for all drugs, not just radiosensitizers.
+
+```{r}
+#| label: fig-two-cell-boxplot
+#| fig-cap: Boxplot of RSI values across the two common cell lines (MCF7 and HL60). The paired differences (using a t test) are significant.
+reduced_cmap <- cmap |>
+  dplyr::filter(cell2 %in% c("MCF7","HL60")) |>
+  tidyr::pivot_longer(cols = c("perturbation_rsi","vehicle_rsi"), names_to="condition",values_to="rsi")
+
+ggpubr::ggboxplot(reduced_cmap, x="condition", y = "rsi", fill = "condition", bxp.errorbar = TRUE,
+                  palette="npg") +
+  ggpubr::stat_compare_means( paired = TRUE, method="t.test")
+```
+
+```{r}
+#| label: fig-boxplot-by-cell-twocells
+#| fig-cap: Boxplot of RSI values in two frequent cell lines, comparing vehicle control and treatment. There are significant differences in both cases.
+#| 
+ggpubr::ggboxplot(reduced_cmap, x="cell2", y = "rsi", facet.by = "condition", fill = "cell2") +
+  ggpubr::stat_compare_means(method="t.test")
+
+
+```
+
+
+# Visualizing Differences
+Another way to visualize the differences in RSI is via a scatter plot of vehicle vs. perturbation. In @fig-v-vs-p-scatter, RSI from the two conditions are plotted against each other, with cell type indicated by color and shpe. A deltaRSI difference of 0.1 is marked by solid gray lines.
+
+```{r}
+#| label: fig-v-vs-p-scatter
+#| fig-cap: Scatter plot of vehicle RSI vs. Perturbation RSI across the CMAP dataset. Note that the solid lines are plotted at a delta RSI of 0.1.
+ggpubr::ggscatter(cmap, x = "vehicle_rsi",y="perturbation_rsi", shape="cell2", fill = "cell2",color="cell2", palette="npg") +
+  ggplot2::geom_abline(slope=1,intercept=-0.1, col="grey") +
+  ggplot2::geom_abline(slope=1,intercept=0.1, col="grey")
+```
