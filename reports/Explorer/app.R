@@ -12,9 +12,10 @@
 library(shiny)
 
 # Load the object to browse through
-cmap_table <- arrow::read_feather("cmap.arrow") |>
-  dplyr::select(cmap_name, cell2, vehicle_rsi,perturbation_rsi,deltaRSI, dplyr::everything()) |>
-  dplyr::arrange(deltaRSI)
+cmap_table <- dplyr::select(
+  arrow::read_feather("cmap.arrow"),
+  cmap_name, cell2, vehicle_rsi,perturbation_rsi,deltaRSI, dplyr::everything()
+)
 
 if ( tibble::has_rownames(cmap_table))
   cmap_table <- tibble::rownames_to_column(cmap_table)
@@ -37,6 +38,7 @@ ui <- fluidPage(
       downloadButton("tsv",label=".tsv",icon=shiny::icon("file-lines")),
       downloadButton("csv",label=".csv",icon=shiny::icon("file-csv")),
       downloadButton("robj", label=".rds",icon=shiny::icon("r-project"))
+      #column(8,actionButton("linkout",icon=shiny::icon("arrow-up-right-from-square")))
     ),
     hr(),
 
@@ -60,7 +62,16 @@ server <- function(input, output) {
 
   # DataTable
   # include filter and 100 entries per page
-  output$cmap <- DT::renderDT(cmap_table, filter='top', options=list(lengthChange=FALSE,pageLength = 100, autoWidth = TRUE))
+  output$cmap <- DT::renderDT(
+    cmap_table,
+    filter='top',
+    options=list(
+      lengthChange=FALSE,
+      pageLength = 100,
+      autoWidth = TRUE,
+      order = list(list(5, 'asc'))
+    )
+  )
 
   # Downloaders
   output$csv <- downloadHandler(
